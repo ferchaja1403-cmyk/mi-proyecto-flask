@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Tienda de Abarrotes</title>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            transition: 0.3s;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 18px;
+            box-shadow: 0px 5px 15px rgba(0,0,0,0.1);
+            transition: 0.3s;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .subtitulo{
+            text-align: center;
+            color: gray;
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            color: #444;
+            margin-top: 30px;
+        }
+
+        /* TARJETAS */
+
+        .cards{
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .card{
+            flex: 1;
+            min-width: 200px;
+            background: linear-gradient(135deg, #4CAF50, #2e7d32);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+            transition: 0.3s;
+        }
+
+        .card:hover{
+            transform: translateY(-5px);
+        }
+
+        .card h3{
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .card p{
+            font-size: 28px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        /* INPUTS */
+
+        input {
+            padding: 10px;
+            margin: 5px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            width: 180px;
+            transition: 0.3s;
+        }
+
+        input:focus{
+            border-color: #4CAF50;
+            outline: none;
+            box-shadow: 0px 0px 8px rgba(76,175,80,0.5);
+        }
+
+        /* BOTONES */
+
+        button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #4CAF50, #2e7d32);
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        .modo-btn{
+            float: right;
+            margin-bottom: 15px;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        /* TABLA */
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            overflow: hidden;
+            border-radius: 15px;
+        }
+
+        th {
+            background: #111827;
+            color: white;
+            padding: 14px;
+            letter-spacing: 1px;
+        }
+
+        td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        /* BUSCADOR */
+
+        #busqueda{
+            width: 300px;
+            margin-bottom: 15px;
+        }
+
+        /* MODO OSCURO */
+
+        .dark{
+            background: #121212;
+            color: white;
+        }
+
+        .dark .container{
+            background: #1e1e1e;
+        }
+
+        .dark h1,
+        .dark h2{
+            color: white;
+        }
+
+        .dark table{
+            color: white;
+        }
+
+        .dark td{
+            border-bottom: 1px solid #444;
+        }
+
+        .dark tr:hover{
+            background: #2c2c2c;
+        }
+
+        .dark input{
+            background: #2c2c2c;
+            color: white;
+            border: 1px solid #555;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <button class="modo-btn" onclick="modoOscuro()">🌙 Modo oscuro</button>
+
+    <h1>🛒 Tienda de Abarrotes</h1>
+
+    <p class="subtitulo">
+        Sistema de gestión conectado con MongoDB y Neo4j
+    </p>
+
+    <!-- TARJETAS -->
+
+    <div class="cards">
+
+        <div class="card">
+            <h3>📦 Productos</h3>
+            <p>{{ datos|length }}</p>
+        </div>
+
+        <div class="card">
+            <h3>💰 Inventario</h3>
+            <p>${{ total }}</p>
+        </div>
+
+        <div class="card">
+            <h3>⚠ Bajo stock</h3>
+            <p>{{ bajos }}</p>
+        </div>
+
+    </div>
+
+    <!-- BOTÓN -->
+
+    <a href="/sincronizar">
+        <button>🔄 Sincronizar Mongo → Neo4j</button>
+    </a>
+
+    <!-- AGREGAR -->
+
+    <h2>Agregar producto</h2>
+
+    <form action="/agregar" method="post">
+
+        <input name="producto" placeholder="Producto" required>
+
+        <input name="categoria" placeholder="Categoría" required>
+
+        <input name="precio" placeholder="Precio" required>
+
+        <input name="cantidad" placeholder="Cantidad" required>
+
+        <input name="marca" placeholder="Marca" required>
+
+        <button type="submit">
+            ➕ Agregar
+        </button>
+
+    </form>
+
+    <!-- ACTUALIZAR -->
+
+    <h2>Actualizar producto</h2>
+
+    <form action="/actualizar" method="post">
+
+        <input name="producto" placeholder="Producto a actualizar" required>
+
+        <input name="categoria" placeholder="Nueva categoría" required>
+
+        <input name="precio" placeholder="Nuevo precio" required>
+
+        <input name="cantidad" placeholder="Nueva cantidad" required>
+
+        <input name="marca" placeholder="Nueva marca" required>
+
+        <button type="submit">
+            ✏ Actualizar
+        </button>
+
+    </form>
+
+    <!-- BUSCADOR -->
+
+    <h2>Lista de productos</h2>
+
+    <input
+        type="text"
+        id="busqueda"
+        placeholder="🔍 Buscar producto..."
+    >
+
+    <!-- TABLA -->
+
+    <table id="tablaProductos">
+
+        <tr>
+            <th>Producto</th>
+            <th>Categoría</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Marca</th>
+            <th>Acción</th>
+        </tr>
+
+        {% for p in datos %}
+
+        <tr>
+
+            <td>{{ p.nombre }}</td>
+
+            <td>{{ p.categoria }}</td>
+
+            <td>${{ p.precio }}</td>
+
+            <td>{{ p.cantidad }}</td>
+
+            <td>{{ p.marca }}</td>
+
+            <td>
+
+                <a href="/eliminar/{{ p.nombre }}">
+                    ❌
+                </a>
+
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+    </table>
+
+</div>
+
+<!-- SCRIPTS -->
+
+<script>
+
+    /* MODO OSCURO */
+
+    function modoOscuro(){
+
+        document.body.classList.toggle("dark");
+
+    }
+
+    /* BUSCADOR */
+
+    const buscador =
+        document.getElementById("busqueda");
+
+    buscador.addEventListener("keyup", function(){
+
+        let filtro =
+            buscador.value.toLowerCase();
+
+        let filas =
+            document.querySelectorAll("#tablaProductos tr");
+
+        filas.forEach((fila, index) => {
+
+            if(index === 0) return;
+
+            let texto =
+                fila.textContent.toLowerCase();
+
+            fila.style.display =
+                texto.includes(filtro)
+                ? ""
+                : "none";
+
+        });
+
+    });
+
+</script>
+
+</body>
+</html>
