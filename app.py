@@ -1,44 +1,53 @@
 from flask import Flask, render_template, request, redirect
-from pymongo import MongoClient
 from neo4j import GraphDatabase
 
 app = Flask(__name__)
 
-# 🔹 MongoDB
-client = MongoClient("mongodb://localhost:27017/")
-db = client["Tienda_de_Abarrotes"]
-coleccion = db["productos"]
-
-# 🔹 Neo4j
+# 🔹 CONEXIÓN NEO4J AURA
 driver = GraphDatabase.driver(
-    "bolt://localhost:7687",
-    auth=("neo4j", "Fernanda0204")
+    "neo4j+s://c47fef96.databases.neo4j.io",
+    auth=(
+        "neo4j",
+        "ueWoDr4tsrOoPVmsS6vbItFPBLT-pG9oxOvzxJJW9Rw"
+    )
 )
 
-# 🔹 Página principal
+# 🔹 PÁGINA PRINCIPAL
 @app.route("/")
 def inicio():
 
-    # OBTENER PRODUCTOS
-    datos = list(coleccion.find())
+    with driver.session() as session:
 
-    # 💰 TOTAL INVENTARIO
-    total = 0
+        resultado = session.run("""
+        MATCH (p:Producto)
+        RETURN p.nombre AS nombre,
+               p.categoria AS categoria,
+               p.precio AS precio,
+               p.cantidad AS cantidad,
+               p.marca AS marca
+        """)
 
-    for p in datos:
+        datos = []
 
-        precio = float(p.get("precio", 0))
-        cantidad = int(p.get("cantidad", 0))
+        total = 0
+        bajos = 0
 
-        total += precio * cantidad
+        for p in resultado:
 
-    # ⚠ PRODUCTOS CON BAJO STOCK
-    bajos = 0
+            producto = {
+                "nombre": p["nombre"],
+                "categoria": p["categoria"],
+                "precio": p["precio"],
+                "cantidad": p["cantidad"],
+                "marca": p["marca"]
+            }
 
-    for p in datos:
+            datos.append(producto)
 
-        if int(p.get("cantidad", 0)) < 5:
-            bajos += 1
+            total += float(p["precio"]) * int(p["cantidad"])
+
+            if int(p["cantidad"]) < 5:
+                bajos += 1
 
     return render_template(
         "index.html",
@@ -48,7 +57,7 @@ def inicio():
     )
 
 
-# 🔹 Agregar producto
+# 🔹 AGREGAR PRODUCTO
 @app.route("/agregar", methods=["POST"])
 def agregar():
 
@@ -58,16 +67,6 @@ def agregar():
     cantidad = int(request.form["cantidad"])
     marca = request.form["marca"]
 
-    # MongoDB
-    coleccion.insert_one({
-        "nombre": nombre,
-        "categoria": categoria,
-        "precio": precio,
-        "cantidad": cantidad,
-        "marca": marca
-    })
-
-    # Neo4j
     with driver.session() as session:
 
         session.run("""
@@ -89,27 +88,12 @@ def agregar():
     return redirect("/")
 
 
-# 🔹 Actualizar producto
+# 🔹 ACTUALIZAR PRODUCTO
 @app.route("/actualizar", methods=["POST"])
 def actualizar():
 
     nombre = request.form["producto"]
 
-    # MongoDB
-    coleccion.update_one(
-
-        {"nombre": nombre},
-
-        {"$set": {
-            "categoria": request.form["categoria"],
-            "precio": float(request.form["precio"]),
-            "cantidad": int(request.form["cantidad"]),
-            "marca": request.form["marca"]
-        }}
-
-    )
-
-    # Neo4j
     with driver.session() as session:
 
         session.run("""
@@ -130,14 +114,10 @@ def actualizar():
     return redirect("/")
 
 
-# 🔹 Eliminar producto
+# 🔹 ELIMINAR PRODUCTO
 @app.route("/eliminar/<nombre>")
 def eliminar(nombre):
 
-    # MongoDB
-    coleccion.delete_one({"nombre": nombre})
-
-    # Neo4j
     with driver.session() as session:
 
         session.run("""
@@ -148,45 +128,6 @@ def eliminar(nombre):
     return redirect("/")
 
 
-# 🔥 SINCRONIZAR Mongo → Neo4j
-@app.route("/sincronizar")
-def sincronizar():
-
-    productos = list(coleccion.find())
-
-    with driver.session() as session:
-
-        # BORRAR TODO
-        session.run("MATCH (n:Producto) DETACH DELETE n")
-
-        # INSERTAR DE NUEVO
-        for p in productos:
-
-            nombre = p.get("nombre")
-
-            if nombre and str(nombre).strip():
-
-                session.run("""
-                MERGE (n:Producto {nombre:$nombre})
-
-                SET n.categoria=$categoria,
-                    n.precio=$precio,
-                    n.cantidad=$cantidad,
-                    n.marca=$marca
-                """,
-
-                nombre=nombre,
-                categoria=p.get("categoria"),
-                precio=p.get("precio"),
-                cantidad=p.get("cantidad"),
-                marca=p.get("marca"))
-
-            else:
-                print("⚠️ Producto inválido:", p)
-
-    return redirect("/")
-
-
-# 🔹 Ejecutar app
+# 🔹 EJECUTAR APP
 if __name__ == "__main__":
     app.run(debug=True)
